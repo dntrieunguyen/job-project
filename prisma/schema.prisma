@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model blog {
+  id           String        @id
+  title        String        @db.VarChar(255)
+  description  String        @db.Text
+  categoryId   String
+  numberViews  Int           @default(0)
+  image        String        @default("https://www.example.com/default-image") @db.VarChar(255)
+  author       String        @default("Admin") @db.VarChar(255)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  deletedAt    DateTime?     @db.Timestamp(6)
+  blogcategory blogcategory  @relation(fields: [categoryId], references: [id], map: "Blog_categoryId_fkey")
+  blogdislike  blogdislike[]
+  bloglike     bloglike[]
+
+  @@index([categoryId], map: "Blog_categoryId_fkey")
+}
+
+model blogcategory {
+  id        String    @id
+  title     String    @unique(map: "BlogCategory_title_key") @db.VarChar(255)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime? @db.Timestamp(6)
+  blog      blog[]
+}
+
+model blogdislike {
+  id        String   @id
+  userId    String
+  blogId    String
+  createdAt DateTime @default(now())
+  blog      blog     @relation(fields: [blogId], references: [id], map: "BlogDislike_blogId_fkey")
+  user      user     @relation(fields: [userId], references: [id], map: "BlogDislike_userId_fkey")
+
+  @@index([blogId], map: "BlogDislike_blogId_fkey")
+  @@index([userId], map: "BlogDislike_userId_fkey")
+}
+
+model bloglike {
+  id        String   @id
+  userId    String
+  blogId    String
+  createdAt DateTime @default(now())
+  blog      blog     @relation(fields: [blogId], references: [id], map: "BlogLike_blogId_fkey")
+  user      user     @relation(fields: [userId], references: [id], map: "BlogLike_userId_fkey")
+
+  @@index([blogId], map: "BlogLike_blogId_fkey")
+  @@index([userId], map: "BlogLike_userId_fkey")
+}
+
+model brand {
+  id        String    @id
+  title     String    @unique(map: "Brand_title_key") @db.VarChar(255)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime? @db.Timestamp(6)
+  product   product[]
+}
+
+model cart {
+  id        String   @id
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  title     String
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  product   product  @relation(fields: [productId], references: [id], map: "Cart_productId_fkey")
+  user      user     @relation(fields: [userId], references: [id], map: "Cart_userId_fkey")
+
+  @@index([productId], map: "Cart_productId_fkey")
+  @@index([userId], map: "Cart_userId_fkey")
+}
+
+model coupon {
+  id            String          @id
+  name          String          @unique(map: "Coupon_name_key") @db.VarChar(255)
+  discount      Float
+  expiry        DateTime        @db.Date
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  deletedAt     DateTime?       @db.Timestamp(6)
+  couponproduct couponproduct[]
+  order         order[]
+}
+
+model couponproduct {
+  id        String   @id
+  couponId  String
+  productId String
+  createdAt DateTime @default(now())
+  coupon    coupon   @relation(fields: [couponId], references: [id], map: "CouponProduct_couponId_fkey")
+  product   product  @relation(fields: [productId], references: [id], map: "CouponProduct_productId_fkey")
+
+  @@index([couponId], map: "CouponProduct_couponId_fkey")
+  @@index([productId], map: "CouponProduct_productId_fkey")
+}
+
+model order {
+  id           String         @id
+  status       String         @default("Processing") @db.VarChar(50)
+  total        Float
+  couponId     String?
+  orderBy      String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  deletedAt    DateTime?      @db.Timestamp(6)
+  coupon       coupon?        @relation(fields: [couponId], references: [id], map: "Order_couponId_fkey")
+  user         user           @relation(fields: [orderBy], references: [id], map: "Order_orderBy_fkey")
+  orderproduct orderproduct[]
+
+  @@index([couponId], map: "Order_couponId_fkey")
+  @@index([orderBy], map: "Order_orderBy_fkey")
+}
+
+model orderproduct {
+  id        String   @id
+  orderId   String
+  productId String
+  count     Int
+  title     String
+  color     String?
+  createdAt DateTime @default(now())
+  order     order    @relation(fields: [orderId], references: [id], map: "OrderProduct_orderId_fkey")
+  product   product  @relation(fields: [productId], references: [id], map: "OrderProduct_productId_fkey")
+
+  @@index([orderId], map: "OrderProduct_orderId_fkey")
+  @@index([productId], map: "OrderProduct_productId_fkey")
+}
+
+model product {
+  id            String          @id
+  title         String          @db.VarChar(255)
+  slug          String          @unique(map: "Product_slug_key") @db.VarChar(255)
+  description   String          @db.Text
+  brandId       String
+  thumb         String          @db.VarChar(255)
+  price         Float
+  category      String          @db.VarChar(255)
+  quantity      Int             @default(0)
+  sold          Int             @default(0)
+  images        String?         @db.Text
+  color         String          @db.VarChar(255)
+  totalRatings  Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  deletedAt     DateTime?       @db.Timestamp(6)
+  cart          cart[]
+  couponproduct couponproduct[]
+  orderproduct  orderproduct[]
+  brand         brand           @relation(fields: [brandId], references: [id], map: "Product_brandId_fkey")
+  rating        rating[]
+  wishlist      wishlist[]
+
+  @@index([brandId], map: "Product_brandId_fkey")
+}
+
+model rating {
+  id        String   @id
+  star      Int
+  comment   String?
+  postedBy  String
+  productId String
+  updatedAt DateTime
+  user      user     @relation(fields: [postedBy], references: [id], map: "Rating_postedBy_fkey")
+  product   product  @relation(fields: [productId], references: [id], map: "Rating_productId_fkey")
+
+  @@index([postedBy], map: "Rating_postedBy_fkey")
+  @@index([productId], map: "Rating_productId_fkey")
+}
+
+model user {
+  id                   String        @id
+  firstName            String        @db.VarChar(255)
+  lastName             String        @db.VarChar(255)
+  email                String        @unique(map: "User_email_key") @db.VarChar(255)
+  avatar               String?       @db.VarChar(255)
+  phone                String?       @db.VarChar(20)
+  userName             String?       @unique(map: "User_userName_key") @db.VarChar(255)
+  password             String        @db.VarChar(255)
+  role                 String        @default("Customer") @db.VarChar(50)
+  cart                 String?       @db.Text
+  address              String?       @db.Text
+  wishList             String?       @db.Text
+  isBlocked            Boolean       @default(false)
+  refreshToken         String?       @db.VarChar(255)
+  passwordChangedAt    DateTime?     @db.Timestamp(6)
+  passwordResetExpires DateTime?     @db.Timestamp(6)
+  registerToken        String?       @db.VarChar(255)
+  deletedAt            DateTime?     @db.Timestamp(6)
+  createdAt            DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime      @db.Timestamp(6)
+  blogdislike          blogdislike[]
+  bloglike             bloglike[]
+  cart                 cart[]
+  order                order[]
+  rating               rating[]
+  wishlist             wishlist[]
+}
+
+model wishlist {
+  id        String   @id
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  product   product  @relation(fields: [productId], references: [id], map: "Wishlist_productId_fkey")
+  user      user     @relation(fields: [userId], references: [id], map: "Wishlist_userId_fkey")
+
+  @@index([productId], map: "Wishlist_productId_fkey")
+  @@index([userId], map: "Wishlist_userId_fkey")
+}
